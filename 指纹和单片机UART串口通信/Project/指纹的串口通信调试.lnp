@@ -1,0 +1,8 @@
+"STARTUP.obj",
+".\main.obj",
+".\uart.obj",
+".\AS608.obj",
+".\LCD1602.obj",
+".\delay.obj" 
+TO "指纹的串口通信调试" 
+RAMSIZE(256) 

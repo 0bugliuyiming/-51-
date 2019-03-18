@@ -1,0 +1,331 @@
+C51 COMPILER V9.01   AS608                                                                 03/18/2019 18:37:04 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE AS608
+OBJECT MODULE PLACED IN .\AS608.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\AS608.c BROWSE DEBUG OBJECTEXTEND PRINT(.\AS608.lst) OBJECT(.\AS6
+                    -08.obj)
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include"as608.h"
+   3          #include"uart.h"
+   4          
+   5          //验证口令（默认密码00000000H）
+   6          unsigned char PS_VfyPwd()
+   7          {
+   8   1              unsigned char querenma = 0xFF;          //接收应答包的确认码
+   9   1              unsigned char i;
+  10   1      
+  11   1              //发送指令包：
+  12   1      
+  13   1              /*包头 2 bytes*/
+  14   1              SendByte(0xEF);
+  15   1              SendByte(0x01);
+  16   1      
+  17   1              /*芯片地址 4 bytes*/
+  18   1              SendByte(0xFF);
+  19   1              SendByte(0xFF);
+  20   1              SendByte(0xFF);
+  21   1              SendByte(0xFF);
+  22   1      
+  23   1              /*包标识 1 byte*/
+  24   1              SendByte(0x01);
+  25   1      
+  26   1              /*包长度 2 bytes*/
+  27   1              SendByte(0x00);
+  28   1              SendByte(0x07);
+  29   1      
+  30   1              /*指令码 1 byte*/
+  31   1              SendByte(0x13);
+  32   1      
+  33   1              /*口令 4 bytes*/
+  34   1              SendByte(0x00);
+  35   1              SendByte(0x00);
+  36   1              SendByte(0x00);
+  37   1              SendByte(0x00);
+  38   1      
+  39   1              /*校验和 2 bytes*/
+  40   1              SendByte(0x00);
+  41   1              SendByte(0x1B);
+  42   1      
+  43   1              //接收应答包：
+  44   1      
+  45   1              /*前9位为包头，芯片地址，包标识，包长度。为不需要的部分，不进行保存*/
+  46   1              for(i = 0; i < 9; i++)
+  47   1              {
+  48   2                      while(!RI);
+  49   2                      RI = 0;
+  50   2              }
+  51   1      
+  52   1              /*确认码 1 byte*/
+  53   1              querenma = ReceiveByte();
+  54   1      
+C51 COMPILER V9.01   AS608                                                                 03/18/2019 18:37:04 PAGE 2   
+
+  55   1              /*校验和 2 bytes，不需要，不进行保存*/
+  56   1              while(!RI);
+  57   1              RI = 0;
+  58   1              while(!RI);
+  59   1              RI = 0;
+  60   1      
+  61   1              return querenma;        //返回包为确认码        
+  62   1      }
+  63          
+  64          //录入指纹图像
+  65          unsigned char PS_GetImage()             
+  66          {
+  67   1              unsigned char querenma = 0xFF;          //接收应答包的确认码
+  68   1              unsigned char i;
+  69   1      
+  70   1              //发送指令包：
+  71   1      
+  72   1              /*包头 2 bytes*/
+  73   1              SendByte(0xEF);
+  74   1              SendByte(0x01);
+  75   1      
+  76   1              /*芯片地址 4 bytes*/
+  77   1              SendByte(0xFF);
+  78   1              SendByte(0xFF);
+  79   1              SendByte(0xFF);
+  80   1              SendByte(0xFF);
+  81   1      
+  82   1              /*包标识 1 byte*/
+  83   1              SendByte(0x01);
+  84   1      
+  85   1              /*包长度 2 bytes*/
+  86   1              SendByte(0x00);
+  87   1              SendByte(0x03);
+  88   1      
+  89   1              /*指令码 1 byte*/
+  90   1              SendByte(0x01);
+  91   1      
+  92   1              /*校验和 2 bytes*/
+  93   1              SendByte(0x00);
+  94   1              SendByte(0x05);
+  95   1      
+  96   1              //接收应答包：
+  97   1      
+  98   1              /*前9位为包头，芯片地址，包标识，包长度。为不需要的部分，不进行保存*/
+  99   1              for(i = 0; i < 9; i++)
+ 100   1              {
+ 101   2                      while(!RI);
+ 102   2                      RI = 0;
+ 103   2              }
+ 104   1      
+ 105   1              /*确认码 1 byte*/
+ 106   1              querenma = ReceiveByte();
+ 107   1      
+ 108   1              /*校验和 2 bytes，不需要，不进行保存*/
+ 109   1              while(!RI);
+ 110   1              RI = 0;
+ 111   1              while(!RI);
+ 112   1              RI = 0;
+ 113   1      
+ 114   1              return querenma;        //返回包为确认码 
+ 115   1      }       
+ 116          
+C51 COMPILER V9.01   AS608                                                                 03/18/2019 18:37:04 PAGE 3   
+
+ 117          //生成特征
+ 118          unsigned char PS_GenChar(unsigned char BufferID)
+ 119          {
+ 120   1              unsigned char querenma = 0xFF;          //接收应答包的确认码
+ 121   1              unsigned int summaf;            //16位校验和
+ 122   1              unsigned char sum[2];                   //2 * 8位校验和
+ 123   1              unsigned char i;
+ 124   1      
+ 125   1              //发送指令包：
+ 126   1      
+ 127   1              /*包头 2 bytes*/
+ 128   1              SendByte(0xEF);
+ 129   1              SendByte(0x01);
+ 130   1      
+ 131   1              /*芯片地址 4 bytes*/
+ 132   1              SendByte(0xFF);
+ 133   1              SendByte(0xFF);
+ 134   1              SendByte(0xFF);
+ 135   1              SendByte(0xFF);
+ 136   1      
+ 137   1              /*包标识 1 byte*/
+ 138   1              SendByte(0x01);
+ 139   1      
+ 140   1              /*包长度 2 bytes*/
+ 141   1              SendByte(0x00);
+ 142   1              SendByte(0x04);
+ 143   1      
+ 144   1              /*指令码 1 byte*/
+ 145   1              SendByte(0x02);
+ 146   1      
+ 147   1              /*缓冲区号 1 byte*/
+ 148   1              SendByte(BufferID);
+ 149   1      
+ 150   1              /*校验和 2 bytes*/
+ 151   1              summaf = 0x07 + BufferID;               //计算16位校验和
+ 152   1              sum[0] = summaf;
+ 153   1              sum[1] = summaf >> 8;   
+ 154   1              SendByte(sum[1]);               //先发送高8位
+ 155   1              SendByte(sum[0]);               //后发送低8位
+ 156   1      
+ 157   1              //接收应答包
+ 158   1      
+ 159   1              /*前9位为包头，芯片地址，包标识，包长度。为不需要的部分，不进行保存*/
+ 160   1              for(i = 0; i < 9; i++)
+ 161   1              {
+ 162   2                      while(!RI);
+ 163   2                      RI = 0;
+ 164   2              }
+ 165   1      
+ 166   1              /*确认码 1 byte*/
+ 167   1              querenma = ReceiveByte();
+ 168   1      
+ 169   1              /*校验和 2 bytes，不需要，不进行保存*/
+ 170   1              while(!RI);
+ 171   1              RI = 0;
+ 172   1              while(!RI);
+ 173   1              RI = 0;
+ 174   1      
+ 175   1              return querenma;        //返回包为确认码 
+ 176   1      }
+ 177          
+ 178          //合并特征（生成模板）
+C51 COMPILER V9.01   AS608                                                                 03/18/2019 18:37:04 PAGE 4   
+
+ 179          unsigned char PS_RegModel()
+ 180          {
+ 181   1              unsigned char querenma = 0xFF;          //接收应答包的确认码
+ 182   1              unsigned char i;
+ 183   1      
+ 184   1              //发送指令包
+ 185   1      
+ 186   1              /*包头 2 bytes*/
+ 187   1              SendByte(0xEF);
+ 188   1              SendByte(0x01);
+ 189   1      
+ 190   1              /*芯片地址 4 bytes*/
+ 191   1              SendByte(0xFF);
+ 192   1              SendByte(0xFF);
+ 193   1              SendByte(0xFF);
+ 194   1              SendByte(0xFF);
+ 195   1      
+ 196   1              /*包标识 1 byte*/
+ 197   1              SendByte(0x01);
+ 198   1      
+ 199   1              /*包长度 2 bytes*/
+ 200   1              SendByte(0x00);
+ 201   1              SendByte(0x03);
+ 202   1              
+ 203   1              /*指令码 1 byte*/
+ 204   1              SendByte(0x05);
+ 205   1      
+ 206   1              /*校验和 2 bytes*/
+ 207   1              SendByte(0x00);
+ 208   1              SendByte(0x09);
+ 209   1      
+ 210   1              //接收应答包
+ 211   1      
+ 212   1              /*前9位为包头，芯片地址，包标识，包长度。为不需要的部分，不进行保存*/
+ 213   1              for(i = 0; i < 9; i++)
+ 214   1              {
+ 215   2                      while(!RI);
+ 216   2                      RI = 0;
+ 217   2              }
+ 218   1      
+ 219   1              /*确认码 1 byte*/
+ 220   1              querenma = ReceiveByte();
+ 221   1      
+ 222   1              /*校验和 2 bytes，不需要，不进行保存*/
+ 223   1              while(!RI);
+ 224   1              RI = 0;
+ 225   1              while(!RI);
+ 226   1              RI = 0;
+ 227   1      
+ 228   1              return querenma;        //返回包为确认码 
+ 229   1      }
+ 230          
+ 231          //储存模板
+ 232          unsigned char PS_StoreChar(unsigned char BufferID, unsigned int PageID)
+ 233          {
+ 234   1              unsigned char querenma = 0xFF;          //接收应答包的确认码
+ 235   1              unsigned char page[2];          //2 * 8位位置号
+ 236   1              unsigned int summaf;            //16位校验和
+ 237   1              unsigned char sum[2];                   //2 * 8位校验和
+ 238   1              unsigned char i;
+ 239   1              
+ 240   1              //发送指令包：
+C51 COMPILER V9.01   AS608                                                                 03/18/2019 18:37:04 PAGE 5   
+
+ 241   1      
+ 242   1              /*包头 2 bytes*/
+ 243   1              SendByte(0xEF);
+ 244   1              SendByte(0x01);
+ 245   1      
+ 246   1              /*芯片地址 4 bytes*/
+ 247   1              SendByte(0xFF);
+ 248   1              SendByte(0xFF);
+ 249   1              SendByte(0xFF);
+ 250   1              SendByte(0xFF);
+ 251   1      
+ 252   1              /*包标识 1 byte*/
+ 253   1              SendByte(0x01);
+ 254   1      
+ 255   1              /*包长度 2 bytes*/
+ 256   1              SendByte(0x00);
+ 257   1              SendByte(0x06);
+ 258   1      
+ 259   1              /*指令码 1 byte*/
+ 260   1              SendByte(0x06);
+ 261   1      
+ 262   1              /*缓冲区号 1 byte*/
+ 263   1              SendByte(BufferID);     
+ 264   1      
+ 265   1              /*位置号 2 bytes*/
+ 266   1              page[0] = PageID;
+ 267   1              page[1] = PageID >> 8;
+ 268   1              SendByte(page[1]);
+ 269   1              SendByte(page[0]);
+ 270   1      
+ 271   1              /*校验和 2 bytes*/
+ 272   1              summaf = (0x01 + 0x06 + 0x06 + BufferID + PageID);
+ 273   1              sum[0] = summaf;
+ 274   1              sum[1] = summaf >> 8;
+ 275   1              SendByte(sum[1]);
+ 276   1              SendByte(sum[0]); 
+ 277   1      
+ 278   1              //接收应答包
+ 279   1      
+ 280   1              /*前9位为包头，芯片地址，包标识，包长度。为不需要的部分，不进行保存*/
+ 281   1              for(i = 0; i < 9; i++)
+ 282   1              {
+ 283   2                      while(!RI);
+ 284   2                      RI = 0;
+ 285   2              }
+ 286   1      
+ 287   1              /*确认码 1 byte*/
+ 288   1              querenma = ReceiveByte();
+ 289   1      
+ 290   1              /*校验和 2 bytes，不需要，不进行保存*/
+ 291   1              while(!RI);
+ 292   1              RI = 0;
+ 293   1              while(!RI);
+ 294   1              RI = 0;
+ 295   1      
+ 296   1              return querenma;        //返回包为确认码
+ 297   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    545    ----
+   CONSTANT SIZE    =   ----    ----
+C51 COMPILER V9.01   AS608                                                                 03/18/2019 18:37:04 PAGE 6   
+
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      15
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

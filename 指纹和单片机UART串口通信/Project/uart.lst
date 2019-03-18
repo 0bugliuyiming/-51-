@@ -1,0 +1,58 @@
+C51 COMPILER V9.01   UART                                                                  03/18/2019 18:37:04 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\uart.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\uart.c BROWSE DEBUG OBJECTEXTEND PRINT(.\uart.lst) OBJECT(.\uart.
+                    -obj)
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include"uart.h"
+   3          
+   4          //串口初始化程序
+   5          void ConfigUART()
+   6          {
+   7   1          SCON  = 0x50;  //配置串口为模式1
+   8   1              PCON = 0x80;   //波特率翻倍
+   9   1          TMOD &= 0x0F;  //清零T1的控制位
+  10   1          TMOD |= 0x20;  //配置T1为模式2
+  11   1          TH1 = 0xFA;    //波特率9600
+  12   1          TL1 = TH1;     //初值等于重载值
+  13   1          ET1 = 0;       //禁止T1中断
+  14   1          ES  = 1;       //使能串口中断
+  15   1          TR1 = 1;       //启动T1
+  16   1      }
+  17          
+  18          //发送一个字节的数据，形参d即为待发送数据。
+  19          void SendByte(unsigned char d)                  
+  20          {
+  21   1              SBUF = d; //将数据写入到串口缓冲
+  22   1              while(!TI); //等待发送完毕
+  23   1              TI = 0;
+  24   1      }
+  25          
+  26          //接收一个字节的数据，返回值为unsigned char类型
+  27          unsigned char ReceiveByte()
+  28          {
+  29   1              unsigned char dat;
+  30   1              while(!RI);             //接收完毕
+  31   1              RI = 0;
+  32   1              dat = SBUF;             //接收串口发来的数据
+  33   1              return dat;
+  34   1      }      
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     41    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

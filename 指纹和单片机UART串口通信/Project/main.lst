@@ -1,0 +1,115 @@
+C51 COMPILER V9.01   MAIN                                                                  03/18/2019 18:37:04 PAGE 1   
+
+
+C51 COMPILER V9.01, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\main.obj
+COMPILER INVOKED BY: D:\Keil\C51\BIN\C51.EXE ..\Source\main.c BROWSE DEBUG OBJECTEXTEND PRINT(.\main.lst) OBJECT(.\main.
+                    -obj)
+
+line level    source
+
+   1          #include<reg52.h>
+   2          #include<intrins.h>
+   3          #include"uart.h"
+   4          #include"as608.h"
+   5          #include"lcd1602.h"
+   6          #include"DELAY.h"
+   7          
+   8          unsigned char querenma;         //接收确认码
+   9          
+  10          //按两次指纹登陆一个模板存于flash指纹库
+  11          unsigned char PS_Input()
+  12          {
+  13   1              unsigned char querenma;         //接收确认码
+  14   1              unsigned int PageID = 2;
+  15   1      
+  16   1              querenma = PS_VfyPwd();         //验证口令
+  17   1              if(querenma != 0x00)
+  18   1              {
+  19   2                      return querenma;
+  20   2              }
+  21   1              querenma = PS_GetImage();       //录入指纹图像
+  22   1              if(querenma != 0x00)
+  23   1              {
+  24   2                      return querenma;
+  25   2              }
+  26   1              querenma = PS_GenChar(0x01);    //生成特征，存于CharBuffer1中
+  27   1              if(querenma != 0x00)
+  28   1              {
+  29   2                      return querenma;
+  30   2              }
+  31   1              querenma = PS_GetImage();               //再次录入指纹图像
+  32   1              if(querenma != 0x00)
+  33   1              {
+  34   2                      return querenma;
+  35   2              }
+  36   1              querenma = PS_GenChar(0x02);    //生成特征，存于CharBuffer2中
+  37   1              if(querenma != 0x00)
+  38   1              {
+  39   2                      return querenma;
+  40   2              }
+  41   1              querenma = PS_RegModel();               //合并特征（生成模板）
+  42   1              if(querenma != 0x00)
+  43   1              {
+  44   2                      return querenma;
+  45   2              }
+  46   1              querenma = PS_StoreChar(0x02, PageID);  //储存模板于数据库01号
+  47   1      
+  48   1              return querenma;
+  49   1      }
+  50          
+  51          void main()
+  52          {
+  53   1              unsigned char str[2];
+  54   1              
+C51 COMPILER V9.01   MAIN                                                                  03/18/2019 18:37:04 PAGE 2   
+
+  55   1              InitLcd1602();          //初始化液晶
+  56   1              LcdShowStr(0,0,"Fingerprint Test");             //液晶开机显示界面
+  57   1              ConfigUART();           //初始化串口
+  58   1              Delay_Ms(200);          //延时500MS，等待指纹模块复位
+  59   1              querenma = PS_Input();  //录入指纹
+  60   1              LcdWriteCmd(0x01);                      //清屏
+  61   1              switch (querenma)
+  62   1              {
+  63   2              case 0xF0: str[0] = '2'; str[1] = '6'; break;
+  64   2              case 0xF1: str[0] = '2'; str[1] = '7'; break;
+  65   2              case 0xF2: str[0] = '2'; str[1] = '8'; break;
+  66   2              case 0xF3: str[0] = '2'; str[1] = '9'; break;
+  67   2              case 0xF4: str[0] = '3'; str[1] = '0'; break;
+  68   2              case 0xF5: str[0] = '3'; str[1] = '1'; break;
+  69   2              case 0xF6: str[0] = '3'; str[1] = '2'; break;
+  70   2              default: str[0] = querenma / 10; str[1] = querenma % 10;
+  71   2                      break;
+  72   2              }
+  73   1              str[0] += '0';
+  74   1              str[1] += '0';
+  75   1              while(1)
+  76   1              {       
+  77   2                      if(querenma == 0x00)
+  78   2                      {
+  79   3                              LcdShowStr(0, 0, "Succeed");
+  80   3                      }
+  81   2                      else
+  82   2                      {
+  83   3                              /*str[0] = (querenma & 0x0F) + '0';
+  84   3                              str[1] = (querenma >> 4) + '0';*/
+  85   3                              LcdShowStr(0, 0, "FS Error");
+  86   3                              LcdShowStr(0, 1, str);
+  87   3                      }
+  88   2              }
+  89   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    270    ----
+   CONSTANT SIZE    =     34    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1       4
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
